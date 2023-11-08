@@ -1,9 +1,15 @@
-import './App.css'
-import { Router } from './routes'
+import { Toaster } from 'react-hot-toast';
+import { Router } from './routes';
+
+import './App.css';
 
 function App() {
-
-    return <Router />
+    return (
+        <>
+            <Router />
+            <Toaster />
+        </>
+    );
 }
 
-export default App
+export default App;
