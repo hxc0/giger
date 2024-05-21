@@ -14,56 +14,98 @@ namespace Giger.Connections.SocketsManagment
 
         public virtual async Task OnConnected(WebSocket socket, HttpContext context)
         {
-            context.Request.Query.TryGetValue("AuthToken", out var token);
-            if (string.IsNullOrEmpty(token))
+            try
             {
-                await socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "No token", CancellationToken.None);
-                return;
+                context.Request.Query.TryGetValue("AuthToken", out var token);
+                if (string.IsNullOrEmpty(token))
+                {
+                    await socket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "No token", CancellationToken.None);
+                    return;
+                }
+                await Task.Run(() => { Connections.AddSocket(socket, token); });
             }
-            await Task.Run(() => { Connections.AddSocket(socket, token); });
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         public virtual async Task OnDisconnected(WebSocket socket)
         {
-            await Connections.RemoveConnectionAsync(Connections.GetUserId(socket));
+            try
+            {
+                await Connections.RemoveConnectionAsync(Connections.GetUserId(socket));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         public async Task SendMessageAsync(WebSocket socket, string message)
         {
-            if (socket.State != WebSocketState.Open)
-                return;
+            try
+            {
+                if (socket.State != WebSocketState.Open)
+                    return;
 
-            var bytes = Encoding.UTF8.GetBytes(message);
-            var buffer = new ArraySegment<byte>(bytes, 0, message.Length);
-            await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                var bytes = Encoding.UTF8.GetBytes(message);
+                var buffer = new ArraySegment<byte>(bytes, 0, message.Length);
+                await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         public async Task SendMessageAsync(string username, string message)
         {
-            var socket = Connections.GetSocketByUser(username);
-            if (socket != null)
-                await SendMessageAsync(socket, message);
+            try
+            {
+                var socket = Connections.GetSocketByUser(username);
+                if (socket != null)
+                    await SendMessageAsync(socket, message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         public async Task SendMessageToParticipantsAsync(string message, IEnumerable<string> participants)
         {
-            foreach (var socket in Connections.GetParticipants(participants))
+            try
             {
-                if (socket.State == WebSocketState.Open)
+                foreach (var socket in Connections.GetParticipants(participants))
                 {
-                    await SendMessageAsync(socket, message);
+                    if (socket.State == WebSocketState.Open)
+                    {
+                        await SendMessageAsync(socket, message);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
 
         public async Task SendMessageToAllAsync(string message)
         {
-            foreach (var pair in Connections.GetAllConnections())
+            try
             {
-                if (pair.Value.State == WebSocketState.Open)
+                foreach (var pair in Connections.GetAllConnections())
                 {
-                    await SendMessageAsync(pair.Value, message);
+                    if (pair.Value.State == WebSocketState.Open)
+                    {
+                        await SendMessageAsync(pair.Value, message);
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
 

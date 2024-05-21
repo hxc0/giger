@@ -63,10 +63,17 @@ namespace Giger.Connections.Handlers
 
         public override async Task ReceiveAsync(WebSocket socket, WebSocketReceiveResult result, byte[] buffer)
         {
-            if (result.MessageType == WebSocketMessageType.Close)
+            try
             {
-                await OnDisconnected(socket);
-                return;
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    await OnDisconnected(socket);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
 

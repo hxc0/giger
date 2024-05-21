@@ -16,32 +16,46 @@ namespace Giger.Connections.SocketsManagment
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (!context.WebSockets.IsWebSocketRequest)
-                return;
-
-            var socket = await context.WebSockets.AcceptWebSocketAsync();
-
-            await Handler.OnConnected(socket, context);
-            await Receive(socket, async (result, buffer) => 
+            try
             {
-                if (result.MessageType == WebSocketMessageType.Text)
+                if (!context.WebSockets.IsWebSocketRequest)
+                    return;
+
+                var socket = await context.WebSockets.AcceptWebSocketAsync();
+
+                await Handler.OnConnected(socket, context);
+                await Receive(socket, async (result, buffer) =>
                 {
-                    await Handler.ReceiveAsync(socket, result, buffer);
-                }
-                else if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    await Handler.OnDisconnected(socket);
-                }
-            });
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        await Handler.ReceiveAsync(socket, result, buffer);
+                    }
+                    else if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await Handler.OnDisconnected(socket);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
 
         private async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, byte[]> messageHandler)
         {
-            var buffer = new byte[1024 * 4];
-            while (socket.State == WebSocketState.Open)
+            try
             {
-                var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                messageHandler(result, buffer);
+                var buffer = new byte[1024 * 4];
+                while (socket.State == WebSocketState.Open)
+                {
+                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                    messageHandler(result, buffer);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
     }

@@ -31,14 +31,21 @@ namespace Giger.Connections.SocketsManagment
 
         public async void AddSocket(WebSocket socket, string authToken)
         {
-            var auth =  await _auths.GetByAuthTokenAsync(authToken);
-            if (auth != null)
+            try
             {
-                if (_connections.ContainsKey(auth.Username))
+                var auth = await _auths.GetByAuthTokenAsync(authToken);
+                if (auth != null)
                 {
-                    await RemoveConnectionAsync(auth.Username);
+                    if (_connections.ContainsKey(auth.Username))
+                    {
+                        await RemoveConnectionAsync(auth.Username);
+                    }
+                    _connections.TryAdd(auth.Username, socket);
                 }
-                _connections.TryAdd(auth.Username, socket);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }   
 
